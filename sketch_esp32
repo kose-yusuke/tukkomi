@@ -1,0 +1,93 @@
+// #include <ESP32Servo.h>
+
+// #define SERVO_PIN 5
+
+// Servo myServo;
+
+// void setup() {
+//   myServo.attach(SERVO_PIN, 500, 2400); // パルス幅を明示（サーボに合わせて調整）
+// }
+
+// void loop() {
+//   // 素早くツッコミ動作（左へ一気に200°）
+//   myServo.write(200);   // 200度へ一気に
+//   delay(200);           // 0.2秒くらい待つ（勢いを出す）
+
+//   // ゆっくり元の位置（90°）に戻す
+//   for (int pos = 200; pos >= 0; pos--) {
+//     myServo.write(pos);
+//     delay(20);          // 1ステップごとに20ms待つ → 約2秒かけて戻る
+//   }
+
+//   delay(1000);          // 戻ったあと少し休む
+// }
+
+
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ESP32Servo.h>
+
+const char* WIFI_SSID     = "ist_members";
+const char* WIFI_PASSWORD = "8gAp3nY!s2Gm";
+const char* TRIGGER_TOKEN = "mysecret";
+
+#define SERVO_PIN   5
+#define HOME_ANGLE  0
+#define HIT_ANGLE   170
+#define HIT_HOLD_MS 200
+#define RETURN_STEP_DELAY 10
+
+Servo servo1;
+WebServer server(80);
+volatile bool busy = false;
+
+void tsukkomi() {
+  if (busy) return;
+  busy = true;
+
+  servo1.write(HIT_ANGLE);
+  delay(HIT_HOLD_MS);
+
+  int from = HIT_ANGLE, to = HOME_ANGLE;
+  int step = (from > to) ? -1 : 1;
+  for (int p = from; p != to; p += step) {
+    servo1.write(p);
+    delay(RETURN_STEP_DELAY);
+  }
+  servo1.write(HOME_ANGLE);
+
+  busy = false;
+}
+
+void handleTrigger() {
+  String token = server.hasArg("token") ? server.arg("token") : "";
+  if (token != TRIGGER_TOKEN) { server.send(403, "text/plain", "forbidden"); return; }
+  if (busy) { server.send(429, "text/plain", "busy"); return; }
+  tsukkomi();
+  server.send(200, "text/plain", "ok");
+}
+
+void handlePing() { server.send(200, "text/plain", "pong"); }
+
+void setup() {
+  Serial.begin(115200);
+
+  servo1.attach(SERVO_PIN, 500, 2400);
+  servo1.write(HOME_ANGLE);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting WiFi");
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+  Serial.println();
+  Serial.print("WiFi connected: "); Serial.println(WiFi.localIP()); // ← このIPをPC側に設定
+
+  server.on("/trigger", HTTP_GET, handleTrigger);
+  server.on("/ping",    HTTP_GET, handlePing);
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}
