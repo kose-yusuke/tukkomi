@@ -5,7 +5,7 @@ import subprocess
 import os
 
 # ====== 設定 ======
-SERIAL_PORT = "/dev/cu.usbmodem1101"   # Leonardo のポート
+SERIAL_PORT = "/dev/cu.usbmodem101"   # Leonardo のポート
 BAUD        = 9600
 ESP32_IP    = "157.82.205.12"
 TOKEN       = "mysecret"
