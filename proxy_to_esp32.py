@@ -4,7 +4,10 @@ import os
 import time
 import subprocess 
 
-ESP32_IP    = os.getenv("ESP32_IP", "157.82.205.12")
+# ここは各自変更
+# ESP32_IP    = os.getenv("ESP32_IP", "157.82.203.46")
+ESP32_IP    = os.getenv("ESP32_IP", "157.82.205.186")
+# ESP32_IP    = os.getenv("ESP32_IP", "157.82.205.143")
 ESP32_TOKEN = os.getenv("ESP32_TOKEN", "mysecret")
 PORT        = int(os.getenv("PORT", "8000"))
 
